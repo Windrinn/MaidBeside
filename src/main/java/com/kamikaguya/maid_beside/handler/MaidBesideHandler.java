@@ -2,6 +2,7 @@ package com.kamikaguya.maid_beside.handler;
 
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.kamikaguya.maid_beside.main.MaidBeside;
+import com.kamikaguya.maid_beside.compat.superbwarfare.handler.VehicleHandler;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
@@ -96,7 +97,7 @@ public class MaidBesideHandler {
         }
     }
 
-    private static int getMaxPassengersForEntity(Entity entity) {
+    public static int getMaxPassengersForEntity(Entity entity) {
         // 安全地获取实体的最大乘客数
         try {
             // 检查常见原版实体的乘客数量
@@ -110,7 +111,7 @@ public class MaidBesideHandler {
                 return (int) getMaxPassengersMethod.invoke(entity);
             } catch (NoSuchMethodException e) {
                 // 方法不存在，使用默认值
-                return 2;
+                return VehicleHandler.getMaxPassengers(entity);
             }
         } catch (Exception e) {
             return 2; // 默认安全值

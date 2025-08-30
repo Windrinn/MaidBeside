@@ -1,9 +1,11 @@
 package com.kamikaguya.maid_beside.main;
 
+import com.kamikaguya.maid_beside.compat.superbwarfare.handler.VehicleHandler;
 import com.kamikaguya.maid_beside.registry.MaidBesideRegistry;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -24,6 +26,10 @@ public class MaidBeside {
         bus.addListener(this::doClientStuff);
 
         MinecraftForge.EVENT_BUS.register(this);
+
+        if (ModList.get().isLoaded("superbwarfare")) {
+            MinecraftForge.EVENT_BUS.register(VehicleHandler.class);
+        }
     }
 
     public void setup(final FMLCommonSetupEvent event) {
