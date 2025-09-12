@@ -1,0 +1,5 @@
+{
+    "task.maid_beside.drive_vehicle": "驾驶",
+    "task.maid_beside.drive_vehicle.desc": "女仆会驾驶载具移动",
+    "task.maid_beside.drive_vehicle.condition.has_driving": "坐在载具驾驶位上"
+}

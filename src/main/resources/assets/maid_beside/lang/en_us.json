@@ -1,0 +1,5 @@
+{
+    "task.maid_beside.drive_vehicle": "Drive",
+    "task.maid_beside.drive_vehicle.desc": "The maid is capable of driving vehicles",
+    "task.maid_beside.drive_vehicle.condition.has_driving": "Sitting in the driver's seat of a vehicle"
+}
