@@ -10,6 +10,7 @@ import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityMountEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -31,17 +32,17 @@ public class MaidBesideHandler {
     }
 
     @SubscribeEvent
-    public static void onEntityMountEvent(EntityMountEvent event) {
+    public static void onPlayerMountVehicle(EntityMountEvent event) {
         // 只在服务端处理且是骑乘事件
         if (!event.isCanceled() && event.isMounting() && !event.getEntity().level().isClientSide()) {
-            if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            if (event.getEntity() instanceof ServerPlayer player) {
                 Entity vehicle = event.getEntityBeingMounted();
 
                 // 确保载具存在
-                if (vehicle != null) {
+                if (vehicle != null && !VehicleHandler.isLowHealth(vehicle)) {
                     // 获取玩家附近的所有女仆
-                    List<Entity> nearbyEntities = serverPlayer.level().getEntities(serverPlayer,
-                            serverPlayer.getBoundingBox().inflate(10.0D),
+                    List<Entity> nearbyEntities = player.level().getEntities(player,
+                            player.getBoundingBox().inflate(10.0D),
                             entity -> entity instanceof EntityMaid
                     );
 
@@ -51,11 +52,11 @@ public class MaidBesideHandler {
 
                         if (maid.isAlive() &&
                                 maid.getOwnerUUID() != null &&
-                                maid.getOwnerUUID().equals(serverPlayer.getUUID()) &&
+                                maid.getOwnerUUID().equals(player.getUUID()) &&
                                 !maid.isPassenger()) {
                             // 稍等片刻再让女仆骑乘，确保玩家已经完成骑乘
                             // 计算延迟执行的时间点（2刻后）
-                            long scheduledTick = serverPlayer.level().getGameTime() + 2;
+                            long scheduledTick = player.level().getGameTime() + 2;
                             DELAYED_RIDES.put(maid.getUUID(), new DelayedRideInfo(maid, vehicle, scheduledTick));
                         }
                     }
@@ -121,39 +122,45 @@ public class MaidBesideHandler {
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide() &&
-                event.player instanceof ServerPlayer serverPlayer) {
+                event.player instanceof ServerPlayer player) {
 
-            Entity currentVehicle = serverPlayer.getVehicle();
-            UUID playerId = serverPlayer.getUUID();
-            Entity previousVehicle = PLAYER_VEHICLES.get(playerId);
+            Entity currentVehicle = player.getVehicle();
+            UUID playerUUID = player.getUUID();
+            Entity previousVehicle = PLAYER_VEHICLES.get(playerUUID);
 
             // 检查玩家是否在骑乘
             if (previousVehicle != null && currentVehicle == null) {
                 // 玩家已取消骑乘，让女仆也取消骑乘
-                dismissMaidsFromVehicle(serverPlayer, previousVehicle);
+                dismissMaidsFromVehicle(player, previousVehicle);
+            }
+
+            // 检查载具血量是否健康
+            if (previousVehicle != null && VehicleHandler.isLowHealth(currentVehicle)) {
+                // 载具低血量时跳车
+                dismissMaidsFromVehicle(player, previousVehicle);
             }
 
             // 更新玩家载具状态
-            PLAYER_VEHICLES.put(playerId, currentVehicle);
+            PLAYER_VEHICLES.put(playerUUID, currentVehicle);
 
             // 处理延迟取消骑乘检查（防止瞬时状态误判）
-            if (PLAYER_DISMOUNT_CHECK.containsKey(playerId)) {
-                int checkCount = PLAYER_DISMOUNT_CHECK.get(playerId);
+            if (PLAYER_DISMOUNT_CHECK.containsKey(playerUUID)) {
+                int checkCount = PLAYER_DISMOUNT_CHECK.get(playerUUID);
                 if (checkCount > 0) {
-                    PLAYER_DISMOUNT_CHECK.put(playerId, checkCount - 1);
+                    PLAYER_DISMOUNT_CHECK.put(playerUUID, checkCount - 1);
                 } else {
-                    Entity storedVehicle = PLAYER_VEHICLES.get(playerId);
-                    if (storedVehicle != null && serverPlayer.getVehicle() == null) {
-                        dismissMaidsFromVehicle(serverPlayer, storedVehicle);
+                    Entity storedVehicle = PLAYER_VEHICLES.get(playerUUID);
+                    if (storedVehicle != null && player.getVehicle() == null) {
+                        dismissMaidsFromVehicle(player, storedVehicle);
                     }
-                    PLAYER_DISMOUNT_CHECK.remove(playerId);
+                    PLAYER_DISMOUNT_CHECK.remove(playerUUID);
                 }
             }
         }
     }
 
     @SubscribeEvent
-    public static void onEntityMount(EntityMountEvent event) {
+    public static void onPlayerDismountVehicle(EntityMountEvent event) {
         if (!event.isMounting() && !event.getEntity().level().isClientSide() &&
                 event.getEntity() instanceof ServerPlayer player) {
 
@@ -170,6 +177,27 @@ public class MaidBesideHandler {
         }
     }
 
+    @SubscribeEvent
+    public static void onMaidTick(LivingEvent.LivingTickEvent event) {
+        if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof EntityMaid maid && isMaidDriver(maid, maid.getVehicle())) {
+
+            Entity currentVehicle = maid.getVehicle();
+
+            // 检查载具血量是否健康
+            if (VehicleHandler.isLowHealth(currentVehicle)) {
+                // 载具低血量时跳车
+                dismissMaidFromVehicle(maid, currentVehicle);
+            }
+        }
+    }
+
+    public static boolean isMaidDriver(EntityMaid maid, Entity vehicle) {
+        if (vehicle == maid.getVehicle()) {
+            return VehicleHandler.isDriver(maid, vehicle);
+        } else
+            return false;
+    }
+
     /**
      * 让所有女仆从载具下车
      */
@@ -180,36 +208,32 @@ public class MaidBesideHandler {
         for (Entity passenger : vehicle.getPassengers()) {
             if (passenger instanceof EntityMaid maid &&
                     maid.getOwnerUUID() != null &&
-                    maid.getOwnerUUID().equals(player.getUUID())) {
+                    maid.getOwnerUUID().equals(player.getUUID()) &&
+                    !isMaidDriver(maid, vehicle)) {
 
                 // 让女仆取消骑乘
                 maid.stopRiding();
-
-                // 将女仆传送到玩家附近
-                teleportMaidToPlayer(maid, player);
             }
         }
     }
 
-    /**
-     * 将女仆传送到玩家附近
-     */
-    private static void teleportMaidToPlayer(EntityMaid maid, ServerPlayer player) {
-        double offsetX = (player.getRandom().nextDouble() - 0.5) * 2.0;
-        double offsetZ = (player.getRandom().nextDouble() - 0.5) * 2.0;
+    private static void dismissMaidFromVehicle(EntityMaid maid, Entity vehicle) {
+        if (vehicle == null) return;
 
-        maid.teleportTo(
-                player.getX() + offsetX,
-                player.getY(),
-                player.getZ() + offsetZ
-        );
+        // 查找所有骑乘在该载具上的女仆
+        for (Entity passenger : vehicle.getPassengers()) {
+            if (passenger instanceof EntityMaid) {
+                // 让女仆取消骑乘
+                maid.stopRiding();
+            }
+        }
     }
 
-    // 清理玩家数据的方法
+    // 清理数据
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        UUID playerId = event.getEntity().getUUID();
-        PLAYER_VEHICLES.remove(playerId);
-        PLAYER_DISMOUNT_CHECK.remove(playerId);
+        UUID playerUUID = event.getEntity().getUUID();
+        PLAYER_VEHICLES.remove(playerUUID);
+        PLAYER_DISMOUNT_CHECK.remove(playerUUID);
     }
 }
