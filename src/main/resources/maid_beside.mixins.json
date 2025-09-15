@@ -1,14 +1,14 @@
 {
   "required": true,
-  "minVersion": "0.8",
   "package": "com.kamikaguya.maid_beside.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "refmap": "maid_beside.refmap.json",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ServerCoreMixin"
   ],
-  "client": [],
   "injectors": {
     "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
   }
 }

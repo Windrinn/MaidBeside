@@ -1,16 +1,16 @@
 package com.kamikaguya.maid_beside.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class MaidConfig {
-    public static ForgeConfigSpec.IntValue MAID_DRIVE_SHOOT_DISTANCE;
-    public static ForgeConfigSpec.IntValue MAID_SEARCH_DISTANCE;
-    public static ForgeConfigSpec.BooleanValue MAID_BESIDE_DEBUG;
+    public static ModConfigSpec.IntValue MAID_DRIVE_SHOOT_DISTANCE;
+    public static ModConfigSpec.IntValue MAID_SEARCH_DISTANCE;
+    public static ModConfigSpec.BooleanValue MAID_BESIDE_DEBUG;
 
     public MaidConfig() {
     }
 
-    public static void init(ForgeConfigSpec.Builder builder) {
+    public static void init(ModConfigSpec.Builder builder) {
         builder.push("maid");
         builder.comment("Recognition distance of a maid under the drive task(0-512)");
         MAID_DRIVE_SHOOT_DISTANCE = builder.defineInRange("MaidDriveShootDistance", 128, 0, 512);

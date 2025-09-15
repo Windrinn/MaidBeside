@@ -8,17 +8,17 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.entity.vehicle.Minecart;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityMountEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityMountEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.lang.reflect.Method;
 import java.util.*;
 
-@Mod.EventBusSubscriber(modid = MaidBeside.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = MaidBeside.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class MaidBesideHandler {
     // 存储需要骑乘的女仆和载具信息
     private static final Map<UUID, DelayedRideInfo> DELAYED_RIDES = new HashMap<>();
@@ -66,34 +66,32 @@ public class MaidBesideHandler {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            // 在服务器刻结束时检查延迟骑乘
-            long currentTick = event.getServer().overworld().getGameTime();
+    public static void onServerTick(ServerTickEvent.Post event) {
+        // 在服务器刻结束时检查延迟骑乘
+        long currentTick = event.getServer().overworld().getGameTime();
 
-            Iterator<Map.Entry<UUID, DelayedRideInfo>> iterator = DELAYED_RIDES.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<UUID, DelayedRideInfo> entry = iterator.next();
-                DelayedRideInfo rideInfo = entry.getValue();
+        Iterator<Map.Entry<UUID, DelayedRideInfo>> iterator = DELAYED_RIDES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, DelayedRideInfo> entry = iterator.next();
+            DelayedRideInfo rideInfo = entry.getValue();
 
-                if (currentTick >= rideInfo.scheduledTick) {
-                    // 执行延迟骑乘
-                    if (rideInfo.maid.isAlive() && rideInfo.vehicle.isAlive() &&
-                            rideInfo.vehicle.getPassengers().size() < getMaxPassengersForEntity(rideInfo.vehicle)) {
+            if (currentTick >= rideInfo.scheduledTick) {
+                // 执行延迟骑乘
+                if (rideInfo.maid.isAlive() && rideInfo.vehicle.isAlive() &&
+                        rideInfo.vehicle.getPassengers().size() < getMaxPassengersForEntity(rideInfo.vehicle)) {
 
-                        // 只要玩家在载具上即可
-                        boolean playerIsRiding = rideInfo.vehicle.getPassengers().stream()
-                                .anyMatch(passenger -> passenger instanceof ServerPlayer);
+                    // 只要玩家在载具上即可
+                    boolean playerIsRiding = rideInfo.vehicle.getPassengers().stream()
+                            .anyMatch(passenger -> passenger instanceof ServerPlayer);
 
-                        if (playerIsRiding) {
-                            // 让女仆骑乘，但不强制
-                            rideInfo.maid.startRiding(rideInfo.vehicle, false);
-                        }
+                    if (playerIsRiding) {
+                        // 让女仆骑乘，但不强制
+                        rideInfo.maid.startRiding(rideInfo.vehicle, false);
                     }
-
-                    // 移除已处理的任务
-                    iterator.remove();
                 }
+
+                // 移除已处理的任务
+                iterator.remove();
             }
         }
     }
@@ -120,9 +118,9 @@ public class MaidBesideHandler {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide() &&
-                event.player instanceof ServerPlayer player) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!event.getEntity().level().isClientSide() &&
+                event.getEntity() instanceof ServerPlayer player) {
 
             Entity currentVehicle = player.getVehicle();
             UUID playerUUID = player.getUUID();
@@ -177,31 +175,10 @@ public class MaidBesideHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onMaidTick(LivingEvent.LivingTickEvent event) {
-        if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof EntityMaid maid && isMaidDriver(maid, maid.getVehicle())) {
-
-            Entity currentVehicle = maid.getVehicle();
-
-            // 检查载具血量是否健康
-            if (VehicleHandler.isLowHealth(currentVehicle)) {
-                // 载具低血量时跳车
-                dismissMaidFromVehicle(maid, currentVehicle);
-            }
-        }
-    }
-
-    public static boolean isMaidDriver(EntityMaid maid, Entity vehicle) {
-        if (vehicle == maid.getVehicle()) {
-            return VehicleHandler.isDriver(maid, vehicle);
-        } else
-            return false;
-    }
-
     /**
      * 让所有女仆从载具下车
      */
-    private static void dismissMaidsFromVehicle(ServerPlayer player, Entity vehicle) {
+    public static void dismissMaidsFromVehicle(ServerPlayer player, Entity vehicle) {
         if (vehicle == null) return;
 
         // 查找所有骑乘在该载具上的女仆
@@ -209,7 +186,7 @@ public class MaidBesideHandler {
             if (passenger instanceof EntityMaid maid &&
                     maid.getOwnerUUID() != null &&
                     maid.getOwnerUUID().equals(player.getUUID()) &&
-                    !isMaidDriver(maid, vehicle)) {
+                    !VehicleHandler.isDriver(maid, vehicle)) {
 
                 // 让女仆取消骑乘
                 maid.stopRiding();
@@ -217,7 +194,7 @@ public class MaidBesideHandler {
         }
     }
 
-    private static void dismissMaidFromVehicle(EntityMaid maid, Entity vehicle) {
+    public static void dismissMaidFromVehicle(EntityMaid maid, Entity vehicle) {
         if (vehicle == null) return;
 
         // 查找所有骑乘在该载具上的女仆

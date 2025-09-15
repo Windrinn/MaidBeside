@@ -7,46 +7,48 @@ import com.kamikaguya.maid_beside.compat.superbwarfare.handler.VehicleHandler;
 import com.kamikaguya.maid_beside.config.GeneralConfig;
 import com.kamikaguya.maid_beside.registry.MaidBesideRegistry;
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
-// The value here should match an entry in the META-INF/mods.toml file
+// The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod("maid_beside")
 public class MaidBeside {
-
     public static final String MODID = "maid_beside";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public MaidBeside() {
-        IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-        MaidBesideRegistry.register(bus);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, GeneralConfig.init());
-        bus.addListener(this::setup);
-
-        MinecraftForge.EVENT_BUS.register(this);
+    public MaidBeside(IEventBus eventBus, ModContainer modContainer) {
+        initRegister(eventBus);
+        registerConfiguration(modContainer);
+        eventBus.addListener(this::setup);
 
         // ILittleMaid实现到 TLM 的扩展列表
         TouhouLittleMaid.EXTENSIONS.add(new LittleMaidImpl());
 
         if (ModList.get().isLoaded("superbwarfare")) {
-            MinecraftForge.EVENT_BUS.register(VehicleHandler.class);
+            NeoForge.EVENT_BUS.register(VehicleHandler.class);
         }
 
         if (ModList.get().isLoaded("pingwheel")) {
-            MinecraftForge.EVENT_BUS.register(PingHandler.class);
+            NeoForge.EVENT_BUS.register(PingHandler.class);
             // PingWheelIntegration.setup();
         }
+    }
+    private static void initRegister(IEventBus eventBus) {
+        MaidBesideRegistry.MEMORY_MODULE_TYPES.register(eventBus);
+    }
+
+    private static void registerConfiguration(ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.COMMON, GeneralConfig.init());
     }
 
     public void setup(FMLCommonSetupEvent event) {}

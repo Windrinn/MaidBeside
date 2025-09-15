@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class TaskDriveVehicle implements IRangedAttackTask {
-    public static final ResourceLocation UID = new ResourceLocation(MaidBeside.MODID, "drive_vehicle");
+    public static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(MaidBeside.MODID, "drive_vehicle");
     public static final ItemStack ICON = ModItems.MONITOR.get().getDefaultInstance();
 
     @Override

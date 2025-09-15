@@ -1,5 +1,6 @@
 package com.kamikaguya.maid_beside.compat.pingwheel.handler;
 
+import com.kamikaguya.maid_beside.compat.superbwarfare.handler.VehicleHandler;
 import com.kamikaguya.maid_beside.compat.superbwarfare.task.TaskDriveVehicle;
 import com.kamikaguya.maid_beside.config.MaidConfig;
 import com.kamikaguya.maid_beside.handler.MaidBesideHandler;
@@ -10,6 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 import java.util.List;
 
@@ -38,7 +41,7 @@ public class PingHandler {
             boolean isAlive = maid.isAlive();
             boolean hasOwner = maid.getOwnerUUID() != null;
             boolean isOwner = hasOwner && maid.getOwnerUUID().equals(authorPlayer.getUUID());
-            boolean isDriver = MaidBesideHandler.isMaidDriver(maid, maid.getVehicle());
+            boolean isDriver = VehicleHandler.isDriver(maid, maid.getVehicle());
 
             if (MaidConfig.MAID_BESIDE_DEBUG.get()) {
                 MaidBeside.LOGGER.debug("Checking maid {} for ping response", maid.getUUID());
@@ -53,6 +56,20 @@ public class PingHandler {
                 if (MaidConfig.MAID_BESIDE_DEBUG.get()) {
                     MaidBeside.LOGGER.debug("Successfully set ping target memory for maid {} at position {}", maid.getUUID(), targetPos);
                 }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMaidTick(EntityTickEvent.Post event) {
+        if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof EntityMaid maid && VehicleHandler.isDriver(maid, maid.getVehicle())) {
+
+            Entity currentVehicle = maid.getVehicle();
+
+            // 检查载具血量是否健康
+            if (VehicleHandler.isLowHealth(currentVehicle)) {
+                // 载具低血量时跳车
+                MaidBesideHandler.dismissMaidFromVehicle(maid, currentVehicle);
             }
         }
     }

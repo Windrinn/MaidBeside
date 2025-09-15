@@ -1,10 +1,10 @@
 package com.kamikaguya.maid_beside.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class GeneralConfig {
-    public static ForgeConfigSpec init() {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+    public static ModConfigSpec init() {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         MaidConfig.init(builder);
         return builder.build();
     }

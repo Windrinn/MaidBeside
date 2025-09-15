@@ -2,7 +2,7 @@ package com.kamikaguya.maid_beside.compat.superbwarfare.ai.brain;
 
 import com.github.tartaricacid.touhoulittlemaid.api.ILittleMaid;
 import com.github.tartaricacid.touhoulittlemaid.entity.ai.brain.ExtraMaidBrainManager;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 
 public class LittleMaidImpl implements ILittleMaid {
     @Override
