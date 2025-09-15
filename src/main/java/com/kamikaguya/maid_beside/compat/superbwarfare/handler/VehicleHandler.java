@@ -25,8 +25,6 @@ public class VehicleHandler {
     private static final Map<UUID, Double> speedHistory = new HashMap<>();
     private static final Map<UUID, Integer> stuckCounter = new HashMap<>();
     private static final Map<UUID, Vec3> lastPositions = new HashMap<>();
-    private static final Map<UUID, Double> lastDistance = new HashMap<>();
-    private static final Map<UUID, Integer> awayCounter = new HashMap<>();
     private static final Map<UUID, Double> distanceHistory = new HashMap<>();
 
     public VehicleHandler() {
@@ -47,8 +45,17 @@ public class VehicleHandler {
     }
 
     public static boolean isDriver(EntityMaid maid, Entity entity) {
-        if (entity instanceof VehicleEntity vehicle) {
-            return vehicle.getFirstPassenger().getUUID().equals(maid.getUUID());
+        if (entity instanceof MobileVehicleEntity mobileVehicle && mobileVehicle.getFirstPassenger() != null) {
+            return mobileVehicle.getFirstPassenger().getUUID().equals(maid.getUUID());
+        } else
+            return false;
+    }
+
+    // 检查女仆是否应该控制载具
+    public static boolean shouldControlVehicle(EntityMaid maid) {
+        Entity vehicle = maid.getVehicle();
+        if (vehicle instanceof MobileVehicleEntity mobileVehicle) {
+            return isDriver(maid, mobileVehicle);
         } else
             return false;
     }
@@ -62,7 +69,22 @@ public class VehicleHandler {
         Vec3 toTarget = targetPos.subtract(vehicle.position()).multiply(1, 0, 1);
         double distance = toTarget.length();
 
+        Entity ownerVehicle = maid.getOwner().getVehicle();
+        Vec3 ownerPos = maid.getOwner().position();
+        Vec3 toOwner = ownerPos.subtract(vehicle.position()).multiply(1, 0, 1);
+        double distanceToOwner = toOwner.length();
+
+        // 非常接近主人，停止
+        if (ownerVehicle != null && vehicle.getUUID() != ownerVehicle.getUUID() && distanceToOwner < 8.0) {
+            stopVehicle(vehicle);
+            return;
+        } else if (ownerVehicle == null && distanceToOwner < 8.0) {
+            stopVehicle(vehicle);
+            return;
+        }
+
         toTarget = toTarget.normalize();
+        toOwner = toOwner.normalize();
 
         // 获取载具当前朝向
         float yawRad = vehicle.getYRot() * Mth.DEG_TO_RAD;
@@ -130,7 +152,7 @@ public class VehicleHandler {
         }
 
         // 移动逻辑
-        if (distance > 16.0) {
+        if (distance > 32.0) {
             // 远距离：主要前进
             if (dot > 0.3) {
                 keys |= 0b000000100; // 前进
@@ -263,8 +285,8 @@ public class VehicleHandler {
 
         lastPositions.put(vehicleUUID, currentPos);
 
-        // 特别处理：如果目标过近，强制远离
-        if (currentSpeed < 0.001 && distance < 5.0) {
+        // 如果目标过近，强制远离
+        if (distance < 8.0) {
             if (dot > 0) {
                 keys |= 0b000000100; // 前进
             } else {
@@ -314,13 +336,28 @@ public class VehicleHandler {
         Vec3 toTarget = targetPos.subtract(vehicle.position()).multiply(1, 0, 1);
         double distance = toTarget.length();
 
+        Entity ownerVehicle = maid.getOwner().getVehicle();
+        Vec3 ownerPos = maid.getOwner().position();
+        Vec3 toOwner = ownerPos.subtract(vehicle.position()).multiply(1, 0, 1);
+        double distanceToOwner = toOwner.length();
+
+        // 非常接近主人，停止
+        if (ownerVehicle != null && vehicle.getUUID() != ownerVehicle.getUUID() && distanceToOwner < 8.0) {
+            stopVehicle(vehicle);
+            return;
+        } else if (ownerVehicle == null && distanceToOwner < 8.0) {
+            stopVehicle(vehicle);
+            return;
+        }
+
         // 非常接近目标，停止
-        if (distance < 5.0) {
+        if (distance < 8.0) {
             stopVehicle(vehicle);
             return;
         }
 
         toTarget = toTarget.normalize();
+        toOwner = toOwner.normalize();
 
         // 获取载具当前朝向
         float yawRad = vehicle.getYRot() * Mth.DEG_TO_RAD;
@@ -528,12 +565,6 @@ public class VehicleHandler {
         }
     }
 
-    // 检查女仆是否应该控制载具
-    public static boolean shouldControlVehicle(EntityMaid maid) {
-        Entity vehicle = maid.getVehicle();
-        return vehicle instanceof MobileVehicleEntity && isDriver(maid, vehicle);
-    }
-
     private static String getDirectionDescription(double dot) {
         if (dot > 0.7) return "FRONT";
         if (dot > 0.3) return "FRONT-SIDE";
@@ -549,9 +580,9 @@ public class VehicleHandler {
     }
 
     private static String getStrategyDescription(double distance, double dot) {
-        if (distance > 32) return dot > 0 ? "APPROACH" : "REPOSITION";
-        if (distance > 16) return dot > 0.3 ? "ENGAGE" : "REPOSITION";
-        if (distance > 8) return dot > 0.6 ? "CLOSE_COMBAT" : "CIRCLE";
+        if (distance > 39) return dot > 0 ? "APPROACH" : "REPOSITION";
+        if (distance > 21) return dot > 0.3 ? "ENGAGE" : "REPOSITION";
+        if (distance > 13) return dot > 0.6 ? "CLOSE_COMBAT" : "CIRCLE";
         return dot > 0.7 ? "PURSUE" : "EVADE";
     }
 
@@ -563,7 +594,6 @@ public class VehicleHandler {
         speedHistory.remove(vehicleUUID);
         stuckCounter.remove(vehicleUUID);
         lastPositions.remove(vehicleUUID);
-        lastDistance.remove(vehicleUUID);
-        awayCounter.remove(vehicleUUID);
+        distanceHistory.remove(vehicleUUID);
     }
 }

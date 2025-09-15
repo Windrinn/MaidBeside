@@ -79,7 +79,9 @@ public class MaidDriveToPingTarget extends Behavior<EntityMaid> {
         }
 
         Vec3 ownerPos = maid.getOwner().position();
-        if (currentPos.distanceTo(ownerPos) > MaidConfig.MAID_SEARCH_DISTANCE.get()) {
+        Vec3 toOwner = ownerPos.subtract(vehicle.position()).multiply(1, 0, 1);
+        double distanceToOwner = toOwner.length();
+        if (distanceToOwner > MaidConfig.MAID_SEARCH_DISTANCE.get()) {
             maid.getBrain().eraseMemory(TaskDriveVehicle.PING_TARGET());
 
             VehicleHandler.controlVehicleToEntityTarget(maid, mobileVehicle, ownerPos);

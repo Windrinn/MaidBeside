@@ -55,8 +55,8 @@ public class MaidBesideHandler {
                                 maid.getOwnerUUID().equals(player.getUUID()) &&
                                 !maid.isPassenger()) {
                             // 稍等片刻再让女仆骑乘，确保玩家已经完成骑乘
-                            // 计算延迟执行的时间点（2刻后）
-                            long scheduledTick = player.level().getGameTime() + 2;
+                            // 计算延迟执行的时间点（40刻后）
+                            long scheduledTick = player.level().getGameTime() + 40;
                             DELAYED_RIDES.put(maid.getUUID(), new DelayedRideInfo(maid, vehicle, scheduledTick));
                         }
                     }
@@ -169,7 +169,7 @@ public class MaidBesideHandler {
 
             if (vehicle != null) {
                 // 延迟检查
-                PLAYER_DISMOUNT_CHECK.put(player.getUUID(), 2); // 2 刻后检查
+                PLAYER_DISMOUNT_CHECK.put(player.getUUID(), 20); // 20刻后检查
 
                 // 让所有女仆取消骑乘
                 dismissMaidsFromVehicle(player, vehicle);

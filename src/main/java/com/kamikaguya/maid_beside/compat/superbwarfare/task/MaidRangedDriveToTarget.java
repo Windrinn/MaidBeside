@@ -60,8 +60,9 @@ public class MaidRangedDriveToTarget {
             }
 
             Vec3 ownerPos = maid.getOwner().position();
-            Vec3 vehiclePos = mobileVehicle.position();
-            if (vehiclePos.distanceTo(ownerPos) > MaidConfig.MAID_SEARCH_DISTANCE.get()) {
+            Vec3 toOwner = ownerPos.subtract(mobileVehicle.position()).multiply(1, 0, 1);
+            double distanceToOwner = toOwner.length();
+            if (distanceToOwner > MaidConfig.MAID_SEARCH_DISTANCE.get()) {
                 VehicleHandler.controlVehicleToEntityTarget(maid, mobileVehicle, ownerPos);
             }
 
