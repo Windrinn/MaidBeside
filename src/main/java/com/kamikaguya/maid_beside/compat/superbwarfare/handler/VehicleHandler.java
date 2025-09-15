@@ -169,7 +169,7 @@ public class VehicleHandler {
         }
 
         // 移动逻辑
-        if (distance > 16.0) {
+        if (distance > 32.0) {
             // 远距离：主要前进
             if (dot > 0.3) {
                 keys |= 0b000000100; // 前进
@@ -303,7 +303,7 @@ public class VehicleHandler {
         lastPositions.put(vehicleUUID, currentPos);
 
         // 如果目标过近，强制远离
-        if (distance < 5.0) {
+        if (distance < 8.0) {
             if (dot > 0) {
                 keys |= 0b000000100; // 前进
             } else {
@@ -368,7 +368,7 @@ public class VehicleHandler {
         }
 
         // 非常接近目标，停止
-        if (distance < 5.0) {
+        if (distance < 8.0) {
             stopVehicle(vehicle);
             return;
         }
@@ -597,9 +597,9 @@ public class VehicleHandler {
     }
 
     private static String getStrategyDescription(double distance, double dot) {
-        if (distance > 32) return dot > 0 ? "APPROACH" : "REPOSITION";
-        if (distance > 16) return dot > 0.3 ? "ENGAGE" : "REPOSITION";
-        if (distance > 8) return dot > 0.6 ? "CLOSE_COMBAT" : "CIRCLE";
+        if (distance > 39) return dot > 0 ? "APPROACH" : "REPOSITION";
+        if (distance > 21) return dot > 0.3 ? "ENGAGE" : "REPOSITION";
+        if (distance > 13) return dot > 0.6 ? "CLOSE_COMBAT" : "CIRCLE";
         return dot > 0.7 ? "PURSUE" : "EVADE";
     }
 
