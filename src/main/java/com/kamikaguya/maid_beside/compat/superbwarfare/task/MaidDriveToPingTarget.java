@@ -1,6 +1,6 @@
 package com.kamikaguya.maid_beside.compat.superbwarfare.task;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.google.common.collect.ImmutableMap;
 import com.kamikaguya.maid_beside.compat.superbwarfare.handler.VehicleHandler;
@@ -38,7 +38,7 @@ public class MaidDriveToPingTarget extends Behavior<EntityMaid> {
         }
 
         Entity vehicle = maid.getVehicle();
-        if (!(vehicle instanceof MobileVehicleEntity)) {
+        if (!(vehicle instanceof VehicleEntity)) {
             return false;
         }
 
@@ -69,7 +69,7 @@ public class MaidDriveToPingTarget extends Behavior<EntityMaid> {
         // 获取目标位置
         BlockPos pingTarget = maid.getBrain().getMemory(TaskDriveVehicle.PING_TARGET()).get();
         Entity vehicle = maid.getVehicle();
-        MobileVehicleEntity mobileVehicle = (MobileVehicleEntity) vehicle;
+        VehicleEntity mobileVehicle = (VehicleEntity) vehicle;
 
         Vec3 currentPos = mobileVehicle.position();
         double distanceSqr = currentPos.distanceToSqr(pingTarget.getCenter());

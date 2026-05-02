@@ -1,6 +1,6 @@
 package com.kamikaguya.maid_beside.compat.superbwarfare.task;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.kamikaguya.maid_beside.compat.superbwarfare.handler.VehicleHandler;
 import com.kamikaguya.maid_beside.config.MaidConfig;
@@ -45,7 +45,7 @@ public class StopVehicleIfNoTarget {
                 // 连续3帧没有目标才停止
                 if (count >= 3) {
                     Entity vehicle = maid.getVehicle();
-                    if (vehicle instanceof MobileVehicleEntity mobileVehicle) {
+                    if (vehicle instanceof VehicleEntity mobileVehicle) {
                         VehicleHandler.stopVehicle(mobileVehicle);
                         VehicleHandler.cleanupVehicleState(mobileVehicle.getUUID());
                         if (MaidConfig.MAID_BESIDE_DEBUG.get()) {

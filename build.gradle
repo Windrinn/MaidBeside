@@ -149,8 +149,8 @@ dependencies {
     // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
     implementation "curse.maven:touhou-little-maid-355044:6988547"
     implementation "libs:touhoulittlemaid:1.4.1-neoforge+mc1.21.1"
-    implementation "libs:superbwarfare-1.21.1:0.8.7.1-baa2609f"
-    implementation "libs:superbwarfare-1.21.1:0.8.7.1-baa2609f-sources"
+    implementation "libs:superbwarfare-1.21.1-0.8.8"
+    implementation "libs:superbwarfare-1.21.1-0.8.8-sources"
     implementation "libs:Ping-Wheel:1.11.0-neoforge-1.21.1"
     implementation "curse.maven:ping-wheel-734339:6941106"
 
