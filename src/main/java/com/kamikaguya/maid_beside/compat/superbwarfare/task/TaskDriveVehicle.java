@@ -1,6 +1,6 @@
 package com.kamikaguya.maid_beside.compat.superbwarfare.task;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.atsuishio.superbwarfare.init.ModItems;
 import com.github.tartaricacid.touhoulittlemaid.api.task.IRangedAttackTask;
 import com.github.tartaricacid.touhoulittlemaid.compat.gun.common.GunCommonUtil;
@@ -123,7 +123,7 @@ public class TaskDriveVehicle implements IRangedAttackTask {
 
     private boolean isDrivingVehicle(EntityMaid maid) {
         Entity vehicle = maid.getVehicle();
-        return vehicle instanceof MobileVehicleEntity && VehicleHandler.isDriver(maid, vehicle);
+        return vehicle instanceof VehicleEntity && VehicleHandler.isDriver(maid, vehicle);
     }
 
     @Override

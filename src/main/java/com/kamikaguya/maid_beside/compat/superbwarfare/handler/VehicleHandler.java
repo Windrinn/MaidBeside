@@ -1,6 +1,5 @@
 package com.kamikaguya.maid_beside.compat.superbwarfare.handler;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
 import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.kamikaguya.maid_beside.config.MaidConfig;
@@ -48,7 +47,7 @@ public class VehicleHandler {
     }
 
     public static boolean isDriver(EntityMaid maid, Entity entity) {
-        if (entity instanceof MobileVehicleEntity mobileVehicle && mobileVehicle.getFirstPassenger() != null) {
+        if (entity instanceof VehicleEntity mobileVehicle && mobileVehicle.getFirstPassenger() != null) {
             return mobileVehicle.getFirstPassenger().getUUID().equals(maid.getUUID());
         } else
             return false;
@@ -57,7 +56,7 @@ public class VehicleHandler {
     // 检查女仆是否应该控制载具
     public static boolean shouldControlVehicle(EntityMaid maid) {
         Entity vehicle = maid.getVehicle();
-        if (vehicle instanceof MobileVehicleEntity mobileVehicle) {
+        if (vehicle instanceof VehicleEntity mobileVehicle) {
             return isDriver(maid, mobileVehicle);
         } else
             return false;
@@ -77,7 +76,7 @@ public class VehicleHandler {
         }
     }
 
-    public static void controlVehicleToEntityTarget(EntityMaid maid, MobileVehicleEntity vehicle, Vec3 targetPos) {
+    public static void controlVehicleToEntityTarget(EntityMaid maid, VehicleEntity vehicle, Vec3 targetPos) {
         if (vehicle == null || !vehicle.isAlive()) return;
 
         long startTime = System.nanoTime();
@@ -283,10 +282,14 @@ public class VehicleHandler {
                 }
 
                 // 应用逃脱策略
-                vehicle.leftInputDown = (escapeKeys & 0b000000001) != 0;
-                vehicle.rightInputDown = (escapeKeys & 0b000000010) != 0;
-                vehicle.forwardInputDown = (escapeKeys & 0b000000100) != 0;
-                vehicle.backInputDown = (escapeKeys & 0b000001000) != 0;
+                boolean leftInputDown = (escapeKeys & 0b000000001) != 0;
+                vehicle.setLeftInputDown(leftInputDown);
+                boolean rightInputDown = (escapeKeys & 0b000000010) != 0;
+                vehicle.setRightInputDown(rightInputDown);
+                boolean forwardInputDown = (escapeKeys & 0b000000100) != 0;
+                vehicle.setForwardInputDown(forwardInputDown);
+                boolean backInputDown = (escapeKeys & 0b000001000) != 0;
+                vehicle.setBackInputDown(backInputDown);
 
                 // 限制防卡死操作的持续时间
                 stuckCounter.put(vehicleUUID, 0);
@@ -317,10 +320,10 @@ public class VehicleHandler {
             }
         }
 
-        vehicle.leftInputDown = (keys & 0b000000001) != 0;
-        vehicle.rightInputDown = (keys & 0b000000010) != 0;
-        vehicle.forwardInputDown = (keys & 0b000000100) != 0;
-        vehicle.backInputDown = (keys & 0b000001000) != 0;
+        vehicle.setLeftInputDown((keys & 0b000000001) != 0);
+        vehicle.setRightInputDown((keys & 0b000000010) != 0);
+        vehicle.setForwardInputDown((keys & 0b000000100) != 0);
+        vehicle.setBackInputDown((keys & 0b000001000) != 0);
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000; // 微秒
@@ -337,7 +340,7 @@ public class VehicleHandler {
         }
     }
 
-    private static boolean isInCrowd(EntityMaid maid, MobileVehicleEntity vehicle) {
+    private static boolean isInCrowd(EntityMaid maid, VehicleEntity vehicle) {
         // 检测周围是否有大量实体
         AABB area = vehicle.getBoundingBox().inflate(3.0);
         int entityCount = vehicle.level().getEntities(EntityTypeTest.forClass(LivingEntity.class), area,
@@ -346,7 +349,7 @@ public class VehicleHandler {
         return entityCount > 3; // 周围有3个以上生物视为在人群中
     }
 
-    public static void controlVehicleHybrid(EntityMaid maid, MobileVehicleEntity vehicle, Vec3 targetPos) {
+    public static void controlVehicleHybrid(EntityMaid maid, VehicleEntity vehicle, Vec3 targetPos) {
         if (vehicle == null || !vehicle.isAlive()) return;
 
         // 计算方向向量（忽略Y轴）
@@ -394,7 +397,7 @@ public class VehicleHandler {
         // 目标重评估机制 - 如果持续远离目标，重新计算路径
         double lastDistance = distanceHistory.getOrDefault(vehicleUUID, distance);
         boolean isGettingCloser = distance < lastDistance;
-        float powerLevel = vehicle.getEntityData().get(MobileVehicleEntity.POWER);
+        float powerLevel = vehicle.getEntityData().get(VehicleEntity.POWER);
 
         short keys = 0;
         double absCross = Math.abs(smoothedCross);
@@ -449,19 +452,19 @@ public class VehicleHandler {
         }
 
         // 直接设置输入状态，而不是通过 processInput
-        vehicle.leftInputDown = (keys & 0b000000001) != 0;    // 左转
-        vehicle.rightInputDown = (keys & 0b000000010) != 0;   // 右转
-        vehicle.forwardInputDown = (keys & 0b000000100) != 0; // 前进
-        vehicle.backInputDown = (keys & 0b000001000) != 0;    // 后退
+        vehicle.setLeftInputDown((keys & 0b000000001) != 0);    // 左转
+        vehicle.setRightInputDown((keys & 0b000000010) != 0);   // 右转
+        vehicle.setForwardInputDown((keys & 0b000000100) != 0); // 前进
+        vehicle.setBackInputDown((keys & 0b000001000) != 0);    // 后退
 
         if (maid.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).isEmpty()) {
             // 适度提升动力
-            float currentPower = vehicle.getEntityData().get(MobileVehicleEntity.POWER);
+            float currentPower = vehicle.getEntityData().get(VehicleEntity.POWER);
             float targetPower = currentPower;
-            if (vehicle.forwardInputDown) {
+            if (vehicle.forwardInputDown()) {
                 // 前进时增加动力
                 targetPower = Math.min(currentPower + 0.05f, 1.0f);
-            } else if (vehicle.backInputDown) {
+            } else if (vehicle.backInputDown()) {
                 // 后退时增加反向动力
                 targetPower = Math.max(currentPower - 0.05f, -1.0f);
             } else {
@@ -471,21 +474,21 @@ public class VehicleHandler {
             }
 
             // 设置动力
-            vehicle.getEntityData().set(MobileVehicleEntity.POWER, targetPower);
+            vehicle.getEntityData().set(VehicleEntity.POWER, targetPower);
         }
 
         // 直接控制转向系统
-        float targetDeltaRot = vehicle.getEntityData().get(MobileVehicleEntity.DELTA_ROT);
+        float targetDeltaRot = vehicle.getEntityData().get(VehicleEntity.DELTA_ROT);
 
         // 根据转向需求计算目标转向
-        if (vehicle.leftInputDown) {
+        if (vehicle.leftInputDown()) {
             targetDeltaRot = -0.5f;
-        } else if (vehicle.rightInputDown) {
+        } else if (vehicle.rightInputDown()) {
             targetDeltaRot = 0.5f;
         }
 
         // 直接设置转向
-        vehicle.getEntityData().set(MobileVehicleEntity.DELTA_ROT, targetDeltaRot);
+        vehicle.getEntityData().set(VehicleEntity.DELTA_ROT, targetDeltaRot);
 
         // 防卡死逻辑
         double currentSpeed = vehicle.getDeltaMovement().length();
@@ -523,10 +526,10 @@ public class VehicleHandler {
                 }
 
                 // 应用逃脱策略
-                vehicle.leftInputDown = (escapeKeys & 0b000000001) != 0;
-                vehicle.rightInputDown = (escapeKeys & 0b000000010) != 0;
-                vehicle.forwardInputDown = (escapeKeys & 0b000000100) != 0;
-                vehicle.backInputDown = (escapeKeys & 0b000001000) != 0;
+                vehicle.setLeftInputDown((escapeKeys & 0b000000001) != 0);
+                vehicle.setRightInputDown((escapeKeys & 0b000000010) != 0);
+                vehicle.setForwardInputDown((escapeKeys & 0b000000100) != 0);
+                vehicle.setBackInputDown((escapeKeys & 0b000001000) != 0);
 
                 // 限制防卡死操作的持续时间
                 stuckCounter.put(vehicleUUID, 0);
@@ -559,21 +562,21 @@ public class VehicleHandler {
         }
     }
 
-    public static void stopVehicle(MobileVehicleEntity vehicle) {
+    public static void stopVehicle(VehicleEntity vehicle) {
         if (vehicle == null || !vehicle.isAlive()) return;
 
         // 直接设置载具的动力和转向为0
-        vehicle.getEntityData().set(MobileVehicleEntity.POWER, 0f);
-        vehicle.getEntityData().set(MobileVehicleEntity.DELTA_ROT, 0f);
+        vehicle.getEntityData().set(VehicleEntity.POWER, 0f);
+        vehicle.getEntityData().set(VehicleEntity.DELTA_ROT, 0f);
 
         // 重置所有输入状态
-        vehicle.leftInputDown = false;
-        vehicle.rightInputDown = false;
-        vehicle.forwardInputDown = false;
-        vehicle.backInputDown = false;
-        vehicle.upInputDown = false;
-        vehicle.downInputDown = false;
-        vehicle.sprintInputDown = false;
+        vehicle.setLeftInputDown(false);
+        vehicle.setRightInputDown(false);
+        vehicle.setForwardInputDown(false);
+        vehicle.setBackInputDown(false);
+        vehicle.setUpInputDown(false);
+        vehicle.setDownInputDown(false);
+        vehicle.setSprintInputDown(false);
 
         VehicleHandler.cleanupVehicleState(vehicle.getUUID());
 
